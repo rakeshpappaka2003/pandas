@@ -1,0 +1,143 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+
+
+class Student:
+    def __init__(self, roll_no, name):
+        self.roll_no = roll_no
+        self.name = name
+        self.marks = {}
+
+    def add_marks(self, subject, marks):
+        self.marks[subject] = marks
+
+    def calculate_total(self):
+        return sum(self.marks.values())
+
+    def calculate_average(self):
+        if len(self.marks) == 0:
+            return 0
+        return self.calculate_total() / len(self.marks)
+
+    def calculate_grade(self):
+        avg = self.calculate_average()
+        if avg >= 90:
+            return "A+"
+        elif avg >= 75:
+            return "A"
+        elif avg >= 60:
+            return "B"
+        elif avg >= 40:
+            return "C"
+        else:
+            return "Fail"
+
+
+# ---------- GUI PART ----------
+students = []
+
+root = tk.Tk()
+root.title("Student Report Card Generator")
+root.geometry("700x500")
+root.configure(bg="#f0f0f0")
+
+# Roll and Name
+tk.Label(root, text="Roll No:", font=("Arial", 12), bg="#f0f0f0").place(x=30, y=30)
+roll_entry = tk.Entry(root, font=("Arial", 12))
+roll_entry.place(x=150, y=30)
+
+tk.Label(root, text="Name:", font=("Arial", 12), bg="#f0f0f0").place(x=30, y=70)
+name_entry = tk.Entry(root, font=("Arial", 12))
+name_entry.place(x=150, y=70)
+
+# Subject and Marks
+tk.Label(root, text="Subject:", font=("Arial", 12), bg="#f0f0f0").place(x=30, y=120)
+subject_entry = tk.Entry(root, font=("Arial", 12))
+subject_entry.place(x=150, y=120)
+
+tk.Label(root, text="Marks:", font=("Arial", 12), bg="#f0f0f0").place(x=30, y=160)
+marks_entry = tk.Entry(root, font=("Arial", 12))
+marks_entry.place(x=150, y=160)
+
+# Treeview for subjects
+tree = ttk.Treeview(root, columns=("Subject", "Marks"), show="headings", height=6)
+tree.heading("Subject", text="Subject")
+tree.heading("Marks", text="Marks")
+tree.column("Subject", width=150)
+tree.column("Marks", width=100)
+tree.place(x=400, y=30)
+
+
+# Temporary storage for current student subjects
+current_subjects = {}
+
+
+def add_subject():
+    subject = subject_entry.get()
+    try:
+        marks = int(marks_entry.get())
+    except ValueError:
+        messagebox.showerror("Invalid Input", "Marks must be a number!")
+        return
+
+    if subject == "":
+        messagebox.showerror("Error", "Subject cannot be empty!")
+        return
+
+    current_subjects[subject] = marks
+    tree.insert("", "end", values=(subject, marks))
+    subject_entry.delete(0, tk.END)
+    marks_entry.delete(0, tk.END)
+
+
+def save_student():
+    roll = roll_entry.get()
+    name = name_entry.get()
+
+    if roll == "" or name == "":
+        messagebox.showerror("Error", "Roll No and Name are required!")
+        return
+    if not current_subjects:
+        messagebox.showerror("Error", "Please add at least one subject!")
+        return
+
+    student = Student(roll, name)
+    for sub, mark in current_subjects.items():
+        student.add_marks(sub, mark)
+
+    students.append(student)
+
+    messagebox.showinfo("Success", f"Student {name} added successfully!")
+    roll_entry.delete(0, tk.END)
+    name_entry.delete(0, tk.END)
+    tree.delete(*tree.get_children())
+    current_subjects.clear()
+
+
+def show_reports():
+    report_window = tk.Toplevel(root)
+    report_window.title("All Student Reports")
+    report_window.geometry("600x400")
+
+    text = tk.Text(report_window, font=("Consolas", 12))
+    text.pack(fill=tk.BOTH, expand=True)
+
+    for stu in students:
+        text.insert(tk.END, f"--- Report Card ---\n")
+        text.insert(tk.END, f"Roll No: {stu.roll_no}\n")
+        text.insert(tk.END, f"Name   : {stu.name}\n")
+        text.insert(tk.END, f"Marks:\n")
+        for subject, mark in stu.marks.items():
+            text.insert(tk.END, f"  {subject}: {mark}\n")
+        text.insert(tk.END, f"Total Marks : {stu.calculate_total()}\n")
+        text.insert(tk.END, f"Average     : {stu.calculate_average():.2f}\n")
+        text.insert(tk.END, f"Grade       : {stu.calculate_grade()}\n")
+        text.insert(tk.END, "-------------------\n\n")
+
+
+# Buttons
+tk.Button(root, text="Add Subject", font=("Arial", 12), command=add_subject, bg="lightblue").place(x=150, y=200)
+tk.Button(root, text="Save Student", font=("Arial", 12), command=save_student, bg="lightgreen").place(x=150, y=250)
+tk.Button(root, text="Show Reports", font=("Arial", 12), command=show_reports, bg="orange").place(x=150, y=300)
+
+root.mainloop()
